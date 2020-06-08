@@ -1,0 +1,153 @@
+from matplotlib import pyplot as plt
+import mxnet as mx
+from mxnet.gluon.data.vision import transforms
+from mxnet.gluon.data.vision import FashionMNIST
+import numpy as np
+import os
+from pathlib import Path
+from tqdm import tqdm
+
+M4_DATA = Path(os.getenv('DATA_DIR', '../../data'), 'module_4')
+M4_IMAGES = Path(M4_DATA, 'images')
+M4_MODELS = Path(M4_DATA, 'models')
+
+test_dataset = FashionMNIST(train=False, root=M4_IMAGES).transform_first(transforms.ToTensor())
+
+sample_idx = 123
+sample_data, sample_label = test_dataset[sample_idx]
+plt.imshow(sample_data[0].asnumpy())  # 0 for first and only channel (since greyscale).
+
+test_dataloader = mx.gluon.data.DataLoader(test_dataset, shuffle=False, batch_size=1024)
+for data, label in test_dataloader:
+    break
+print(data.shape)
+
+def get_average_image_from_batch(batch):
+    """
+    Given a batch of images, this function should calculate the 'average image'.
+    
+    :param batch: batch of images in NCHW layout.
+    :type batch: mx.nd.NDArray
+    
+    :return: average image in CHW layout.
+    :rtype: mx.nd.NDArray
+    """
+    # YOUR CODE HERE
+    im = mx.nd.mean(batch,axis=(0))
+    return im
+    #transformed_image = transforms.Normalize(batch)
+    #return transformed_image
+    
+def subtract_average_image(sample, average_image):
+    """
+    Given a sample images, this function should return a pixelwise normalized image,
+    using a pre-calculated average image.
+    
+    :param sample: sample image in CHW layout.
+    :type sample: mx.nd.NDArray
+    :param average_image: average image of the dataset in CHW layout.
+    :type average_image: mx.nd.NDArray
+    
+    :return: pixelwise normalized image in CHW layout.
+    :rtype: mx.nd.NDArray
+    """
+    sub = sample - average_image
+    
+    return sub
+    
+    def get_channel_average_from_batch(batch):
+    """
+    Given a batch of images, this function should return the
+    average value for each channel across the images of the batch.
+    
+    :param batch: batch of images in NCHW layout.
+    :type batch: mx.nd.NDArray
+    
+    :return: channel averages in C layout.
+    :rtype: mx.nd.NDArray
+    """
+    # YOUR CODE HERE
+    ad= mx.nd.mean(batch[1])
+    return ad
+    
+    channel_std = 0.31
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(channel_average, channel_std)
+])
+train_dataset = FashionMNIST(train=True, root=M4_IMAGES).transform_first(transform)
+test_dataset = FashionMNIST(train=False, root=M4_IMAGES).transform_first(transform)
+train_dataloader = mx.gluon.data.DataLoader(train_dataset, shuffle=True, batch_size=128)
+test_dataloader = mx.gluon.data.DataLoader(train_dataset, shuffle=False, batch_size=128)
+
+def calculate_accuracy(network, dataloader):
+    """
+    Calculates accuracy of the network on the data given by the dataloader.
+    
+    :param network: network to be tested
+    :type network: mx.gluon.Block
+    :param dataloader: dataloader for test data
+    :type dataloader: mx.gluon.data.DataLoader
+    
+    :return: updated metric
+    :rtype: mx.metric.EvalMetric
+    """
+    # YOUR CODE HERE
+    accuracy = mx.metric.Accuracy()  
+    
+    for data, labels in tqdm(dataloader):
+        preds = network(data)
+        # YOUR CODE HERE
+        accuracy.update(labels, preds)
+    return accuracy
+    
+    test_network = mx.gluon.nn.Dense(units=10)
+test_network.initialize()
+metric = calculate_accuracy(test_network, test_dataloader)
+print(metric.get())
+isinstance(metric, mx.metric.EvalMetric)
+assert metric.name == 'accuracy'
+assert metric.num_inst == 60000
+
+def train(network, dataloader):
+    softmax_cross_entropy = mx.gluon.loss.SoftmaxCrossEntropyLoss()
+    trainer = mx.gluon.Trainer(network.collect_params(), 'sgd', {'learning_rate': 0.1})
+    for data, label in tqdm(dataloader):
+        with mx.autograd.record():
+            output = network(data)
+            loss = softmax_cross_entropy(output, label)
+        loss.backward()
+        trainer.step(data.shape[0])
+        
+
+network = mx.gluon.nn.Sequential()
+network.add(mx.gluon.nn.Dense(16, activation='relu'),
+            mx.gluon.nn.Dense(8, activation='relu'),
+            mx.gluon.nn.Dense(10)
+        )
+# YOUR CODE HERE
+initializer=mx.initializer.Xavier()
+network.initialize(initializer)
+
+network.summary(data)
+
+train(network, train_dataloader)
+metric = calculate_accuracy(network, test_dataloader)
+print(metric.get())
+
+# YOUR CODE HERE
+network=mx.gluon.nn.Sequential()
+network.add(mx.gluon.nn.Conv2D(32,(3,3), activation='relu'),
+            mx.gluon.nn.MaxPool2D((2,2), strides=(2,2)),
+            mx.gluon.nn.Conv2D(16,(3,3), activation='relu'),
+            mx.gluon.nn.MaxPool2D((2,2), strides=(2,2)),
+            mx.gluon.nn.Dense(10)
+)
+
+network.initialize(init=initializer)
+network.summary(data)
+
+train(network, train_dataloader)
+metric = calculate_accuracy(network, test_dataloader)
+print(metric.get())
+
