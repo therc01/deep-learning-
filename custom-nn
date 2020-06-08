@@ -32,12 +32,10 @@ def get_average_image_from_batch(batch):
     :return: average image in CHW layout.
     :rtype: mx.nd.NDArray
     """
-    # YOUR CODE HERE
-    im = mx.nd.mean(batch,axis=(0))
-    return im
-    #transformed_image = transforms.Normalize(batch)
-    #return transformed_image
-    
+# YOUR CODE HERE
+im = mx.nd.mean(batch,axis=(0))
+return im
+
 def subtract_average_image(sample, average_image):
     """
     Given a sample images, this function should return a pixelwise normalized image,
@@ -55,7 +53,7 @@ def subtract_average_image(sample, average_image):
     
     return sub
     
-    def get_channel_average_from_batch(batch):
+def get_channel_average_from_batch(batch):
     """
     Given a batch of images, this function should return the
     average value for each channel across the images of the batch.
@@ -70,7 +68,7 @@ def subtract_average_image(sample, average_image):
     ad= mx.nd.mean(batch[1])
     return ad
     
-    channel_std = 0.31
+channel_std = 0.31
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(channel_average, channel_std)
