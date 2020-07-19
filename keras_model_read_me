@@ -1,0 +1,7 @@
+## Keras DL model readme
+
+I have used Keras API for building two types of simple neural networks.
+First network contains 1 hidden layer with 10 nodes and i have used it thrice, once with 50 epoch and unnormalised input.
+
+Second time i have used normalised data input and lastly had used 100 epochs.
+ 2nd model consisted of 3 hidden layers with 10 nodes each and a dense layer without any activation for output.
